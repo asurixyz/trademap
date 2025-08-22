@@ -66,7 +66,6 @@
         }
 
         .country {
-            fill: #eef2f9;
             stroke: #fff;
             stroke-width: 0.5px;
         }
@@ -361,7 +360,15 @@
                 .data(countries.features)
                 .enter().append("path")
                 .attr("class", "country")
-                .attr("d", path);
+                .attr("d", path)
+                .attr("fill", d => {
+                    if (d.properties.name === "United States of America") {
+                        return "#3b82f6";
+                    } else if (d.properties.name === "China") {
+                        return "#ef4444";
+                    }
+                    return "#eef2f9";
+                });
 
             g.append("path")
                 .datum(d3.geoGraticule10())
