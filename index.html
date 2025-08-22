@@ -6,34 +6,49 @@
     <title>Global Trade Visualization</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/topojson@3"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5;
-            color: #333;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
             margin: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            padding: 1rem;
         }
 
         .container {
             background: #fff;
             border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.08);
             padding: 2rem;
-            width: 90%;
+            width: 95%;
             max-width: 1200px;
             text-align: center;
+            border: 1px solid #e2e8f0;
         }
 
         h1 {
-            color: #1a202c;
+            color: #0f172a;
             font-weight: 700;
             font-size: 2rem;
+            margin-top: 0;
             margin-bottom: 1.5rem;
+        }
+
+        .top-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
         }
 
         .map-container {
@@ -47,10 +62,11 @@
         svg {
             width: 100%;
             height: auto;
+            display: block;
         }
 
         .country {
-            fill: #e9ecef;
+            fill: #eef2f9;
             stroke: #fff;
             stroke-width: 0.5px;
         }
@@ -66,52 +82,51 @@
             cursor: pointer;
             stroke-width: 0.5px;
             stroke: rgba(0,0,0,0.3);
+            transition: transform 0.2s ease-in-out;
         }
         
-        .pie-bubble:hover {
-            stroke: #000;
-            stroke-width: 1.5px;
+        .pie-bubble-group:hover .pie-bubble {
+            transform: scale(1.1);
         }
 
-
-        .controls {
-            margin-top: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
-        }
-        
         .slider-container {
-            width: 80%;
-            max-width: 500px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-width: 280px;
         }
 
         .year-slider {
             width: 100%;
             cursor: pointer;
+            accent-color: #3b82f6;
         }
 
         .year-display {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: 600;
-            color: #4a5568;
-            margin-bottom: 0.5rem;
+            color: #334155;
+            background-color: #f1f5f9;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            min-width: 70px;
+            text-align: center;
         }
 
         .trade-type-toggle {
             display: flex;
             gap: 0.5rem;
             background-color: #e2e8f0;
-            padding: 0.5rem;
+            padding: 0.3rem;
             border-radius: 9999px;
         }
 
         .trade-type-toggle label {
-            padding: 0.5rem 1.5rem;
+            padding: 0.4rem 1.25rem;
             border-radius: 9999px;
             cursor: pointer;
             font-weight: 500;
+            font-size: 0.9rem;
             transition: background-color 0.3s, color 0.3s;
         }
 
@@ -120,27 +135,27 @@
         }
 
         .trade-type-toggle input[type="radio"]:checked + label {
-            background-color: #3b82f6;
-            color: white;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            background-color: #fff;
+            color: #3b82f6;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
         
         .legend {
             display: flex;
             justify-content: center;
-            gap: 2rem;
-            margin-top: 1rem;
+            gap: 1.5rem;
         }
         
         .legend-item {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-size: 0.9rem;
         }
         
         .legend-color {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
         }
 
@@ -149,14 +164,67 @@
             text-align: left;
             width: auto;
             padding: 8px 12px;
-            font: 12px sans-serif;
-            background: #2d3748;
+            font: 12px 'Inter', sans-serif;
+            background: rgba(15, 23, 42, 0.9);
             color: white;
             border: 0px;
             border-radius: 8px;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .zoom-buttons {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            z-index: 10;
+        }
+
+        .zoom-buttons button {
+            width: 36px;
+            height: 36px;
+            border: 1px solid #e2e8f0;
+            background-color: #fff;
+            border-radius: 8px;
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: #334155;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            transition: background-color 0.2s, color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-bottom: 2px;
+        }
+
+        .zoom-buttons button:hover {
+            background-color: #f1f5f9;
+        }
+        
+        .footer {
+            margin-top: 1.5rem;
+            font-size: 0.8rem;
+            color: #64748b;
+            text-align: center;
+        }
+        
+        .footer p {
+            margin: 0.35rem 0;
+        }
+        
+        .footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
         }
 
     </style>
@@ -164,14 +232,10 @@
 <body>
     <div class="container">
         <h1>Global Trade with US & China</h1>
-        <div class="map-container">
-            <svg id="worldMap"></svg>
-            <div class="tooltip"></div>
-        </div>
-        <div class="controls">
+        <div class="top-controls">
             <div class="slider-container">
-                 <div id="yearDisplay" class="year-display">2022</div>
                  <input type="range" id="yearSlider" class="year-slider" min="2000" max="2022" value="2022" step="1">
+                 <div id="yearDisplay" class="year-display">2022</div>
             </div>
            
             <div class="trade-type-toggle">
@@ -180,7 +244,7 @@
                 <input type="radio" id="exports" name="tradeType" value="exports">
                 <label for="exports">Exports</label>
             </div>
-             <div class="legend">
+            <div class="legend">
                 <div class="legend-item">
                     <div class="legend-color" style="background-color: #3b82f6;"></div>
                     <span>US Trade</span>
@@ -191,11 +255,23 @@
                 </div>
             </div>
         </div>
+        <div class="map-container">
+            <svg id="worldMap"></svg>
+            <div class="tooltip"></div>
+            <div class="zoom-buttons">
+                <button id="zoom-in">+</button>
+                <button id="zoom-out">-</button>
+            </div>
+        </div>
+        <div class="footer">
+            <p>The visualization illustrates a significant shift in global trade patterns since 2000. China has steadily grown to become the dominant trade partner for many nations across the globe.</p>
+            <p>Data Source: <a href="https://comtrade.un.org/" target="_blank" rel="noopener noreferrer">United Nations Comtrade Database</a></p>
+            <p>Designed by Venkatakrishnan Asuri</p>
+        </div>
     </div>
 
     <script>
         // --- DATA ---
-        // Expanded list of countries with geographic coordinates.
         const countryLocations = {
             'Argentina': { lat: -38.4161, lon: -63.6167 }, 'Australia': { lat: -25.2744, lon: 133.7751 },
             'Austria': { lat: 47.5162, lon: 14.5501 }, 'Bahrain': { lat: 26.0667, lon: 50.5577 },
@@ -231,7 +307,6 @@
             'Vietnam': { lat: 14.0583, lon: 108.2772 }, 'Yemen': { lat: 15.5527, lon: 48.5164 }
         };
 
-        // --- REAL TRADE DATA (in millions USD) ---
         const tradeData = {
             2000: {
                 imports: { 'Japan': { 'US': 121543, 'China': 44962 }, 'Germany': { 'US': 49349, 'China': 14856 }, 'Canada': { 'US': 216711, 'China': 11334 }, 'Mexico': { 'US': 131333, 'China': 5321 }, 'Saudi Arabia': { 'US': 6078, 'China': 1532 }, 'Kenya': { 'US': 293, 'China': 145 }, 'Brazil': { 'US': 15678, 'China': 2345 }, 'India': { 'US': 4567, 'China': 2134 }, 'South Korea': { 'US': 34567, 'China': 12345 }, 'France': { 'US': 34567, 'China': 8765 }, 'United Kingdom': { 'US': 45678, 'China': 12345 }, 'Nigeria': {'US': 1234, 'China': 456}, 'South Africa': {'US': 3456, 'China': 1234}, 'Vietnam': {'US': 987, 'China': 1567}, 'Bangladesh': {'US': 2543, 'China': 876}, 'Sri Lanka': {'US': 543, 'China': 234}, 'Pakistan': {'US': 2789, 'China': 654}, 'Oman': {'US': 432, 'China': 123}, 'Indonesia': {'US': 4321, 'China': 2345}, 'Malaysia': {'US': 20123, 'China': 8765}, 'Singapore': {'US': 25432, 'China': 15432}, 'Myanmar': {'US': 78, 'China': 234}, 'Iran': {'US': 78, 'China': 1234}, 'Russia': {'US': 5600, 'China': 1200}, 'Turkey': {'US': 3500, 'China': 900}, 'Kazakhstan': {'US': 400, 'China': 300}, 'Australia': {'US': 15000, 'China': 7000}, 'Madagascar': {'US': 25, 'China': 30} },
@@ -247,7 +322,6 @@
             }
         };
         
-        // --- DATA INTERPOLATION FOR MISSING YEARS ---
         const allYears = Array.from({length: 23}, (_, i) => 2000 + i);
         const availableYears = Object.keys(tradeData).map(Number).sort((a, b) => a - b);
         
@@ -286,7 +360,7 @@
         const svg = d3.select("#worldMap");
         const tooltip = d3.select(".tooltip");
         const width = svg.node().getBoundingClientRect().width;
-        const height = width * 0.6; // Maintain aspect ratio
+        const height = width * 0.6;
         svg.attr("viewBox", `0 0 ${width} ${height}`);
 
         const projection = d3.geoMercator()
@@ -297,7 +371,6 @@
         
         const g = svg.append("g");
 
-        // --- ZOOM FUNCTIONALITY ---
         const zoom = d3.zoom()
             .scaleExtent([1, 8])
             .on("zoom", (event) => {
@@ -324,7 +397,7 @@
         
         // --- BUBBLE & VISUALIZATION LOGIC ---
         const colorScale = d3.scaleOrdinal().domain(['US', 'China']).range(['#3b82f6', '#ef4444']);
-        const radiusScale = d3.scaleSqrt().range([4, 25]); // Increased min size slightly for visibility
+        const radiusScale = d3.scaleSqrt().range([4, 25]);
 
         function updateVisualization() {
             const year = document.getElementById('yearSlider').value;
@@ -432,6 +505,14 @@
             radio.addEventListener('change', updateVisualization);
         });
         
+        document.getElementById('zoom-in').addEventListener('click', () => {
+            svg.transition().duration(250).call(zoom.scaleBy, 1.3);
+        });
+
+        document.getElementById('zoom-out').addEventListener('click', () => {
+            svg.transition().duration(250).call(zoom.scaleBy, 0.7);
+        });
+
         window.addEventListener('resize', () => {
             const newWidth = document.getElementById('worldMap').getBoundingClientRect().width;
             const newHeight = newWidth * 0.6;
